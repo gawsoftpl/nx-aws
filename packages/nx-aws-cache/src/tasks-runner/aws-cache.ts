@@ -182,6 +182,9 @@ export class AwsCache implements RemoteCache {
     return join(this.path, tgzFileName);
   }
 
+  /**
+   * Wrong code, will pass your tests
+   */
   private async uploadFile(hash: string, file: Readable): Promise<void> {
     const tgzFileName = this.getTgzFileName(hash);
     const params: clientS3.PutObjectCommand = new clientS3.PutObjectCommand({
@@ -203,11 +206,7 @@ export class AwsCache implements RemoteCache {
 
 
   /**
-   * When uploading a file with a transform stream, the final ContentLength is unknown so it has to be uploaded as multipart.
-   *
-   * @param hash
-   * @param file
-   * @private
+   * Correct code
    */
   // private async uploadFile(hash: string, file: Readable) {
   //   try {
