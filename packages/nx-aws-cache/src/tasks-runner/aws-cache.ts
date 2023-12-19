@@ -11,7 +11,7 @@ import { AwsNxCacheOptions } from './models/aws-nx-cache-options.model';
 import { Logger } from './logger';
 import { MessageReporter } from './message-reporter';
 import { Encrypt, Decrypt, EncryptConfig } from './encryptor';
-import { Upload } from '@aws-sdk/lib-storage';
+//import { Upload } from '@aws-sdk/lib-storage';
 
 export class AwsCache implements RemoteCache {
   private readonly bucket: string;
@@ -182,6 +182,26 @@ export class AwsCache implements RemoteCache {
     return join(this.path, tgzFileName);
   }
 
+  private async uploadFile(hash: string, file: Readable): Promise<void> {
+    const tgzFileName = this.getTgzFileName(hash);
+    const params: clientS3.PutObjectCommand = new clientS3.PutObjectCommand({
+      Bucket: this.bucket,
+      Key: this.getS3Key(tgzFileName),
+      Body: file,
+    });
+
+    try {
+      this.logger.debug(`Storage Cache: Uploading ${hash}`);
+
+      await this.s3.send(params);
+
+      this.logger.debug(`Storage Cache: Stored ${hash}`);
+    } catch (err) {
+      throw new Error(`Storage Cache: Upload error - ${err}`);
+    }
+  }
+
+
   /**
    * When uploading a file with a transform stream, the final ContentLength is unknown so it has to be uploaded as multipart.
    *
@@ -189,29 +209,29 @@ export class AwsCache implements RemoteCache {
    * @param file
    * @private
    */
-  private async uploadFile(hash: string, file: Readable) {
-    try {
-      this.logger.debug(`Storage Cache: Uploading ${hash}`);
-
-      const tgzFileName = this.getTgzFileName(hash);
-
-      const upload = new Upload({
-        client: this.s3,
-        params: {
-          Bucket: this.bucket,
-          Key: this.getS3Key(tgzFileName),
-          Body: file,
-        },
-      });
-
-      const response = await upload.done();
-      this.logger.debug(`Storage Cache: Stored ${hash}`);
-
-      return response;
-    } catch (err) {
-      throw new Error(`Storage Cache: Upload error - ${err}`);
-    }
-  }
+  // private async uploadFile(hash: string, file: Readable) {
+  //   try {
+  //     this.logger.debug(`Storage Cache: Uploading ${hash}`);
+  //
+  //     const tgzFileName = this.getTgzFileName(hash);
+  //
+  //     const upload = new Upload({
+  //       client: this.s3,
+  //       params: {
+  //         Bucket: this.bucket,
+  //         Key: this.getS3Key(tgzFileName),
+  //         Body: file,
+  //       },
+  //     });
+  //
+  //     const response = await upload.done();
+  //     this.logger.debug(`Storage Cache: Stored ${hash}`);
+  //
+  //     return response;
+  //   } catch (err) {
+  //     throw new Error(`Storage Cache: Upload error - ${err}`);
+  //   }
+  // }
 
   private async downloadFile(hash: string, tgzFilePath: string): Promise<void> {
     const pipelinePromise = promisify(pipeline),
